@@ -1,0 +1,2350 @@
+<!DOCTYPE html>
+
+<html lang="tr">
+
+<head>
+
+<meta charset="UTF-8">
+
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+<title>Apex Tracker</title>
+
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+
+<style>
+
+:root {
+    --bg: #0b0e13;
+    --surface: #131820;
+    --surface-2: #181e27;
+    --surface-3: #202732;
+    --border: #2a323e;
+    --border-soft: #232b35;
+    --text: #f4f7fa;
+    --muted: #8b95a3;
+    --muted-2: #66717f;
+    --accent: #eb4d4d;
+    --accent-soft: rgba(235, 77, 77, .12);
+    --positive: #43d17a;
+    --negative: #ef6464;
+    --purple: #b98cff;
+    --blue: #6ea9ff;
+    --shadow: 0 18px 45px rgba(0, 0, 0, .20);
+    --shadow-soft: 0 8px 22px rgba(0, 0, 0, .13);
+    --radius: 16px;
+    --radius-sm: 11px;
+}
+
+html[data-theme="light"] {
+    --bg: #f2f5f8;
+    --surface: #ffffff;
+    --surface-2: #f5f7fa;
+    --surface-3: #e9eef4;
+    --border: #d9e0e8;
+    --border-soft: #e6ebf1;
+    --text: #18212c;
+    --muted: #667281;
+    --muted-2: #8a95a3;
+    --accent: #d83f3f;
+    --accent-soft: rgba(216, 63, 63, .10);
+    --positive: #20935a;
+    --negative: #d64545;
+    --purple: #7f55bb;
+    --blue: #3e7fcf;
+    --shadow: 0 18px 45px rgba(36, 47, 61, .10);
+    --shadow-soft: 0 8px 22px rgba(36, 47, 61, .07);
+}
+
+* { box-sizing: border-box; }
+
+html {
+    background: var(--bg);
+}
+
+body {
+    margin: 0;
+    min-height: 100vh;
+    background:
+        radial-gradient(circle at 12% 5%, rgba(235,77,77,.06), transparent 28%),
+        radial-gradient(circle at 88% 0%, rgba(110,169,255,.05), transparent 25%),
+        var(--bg);
+    color: var(--text);
+    font-family: Inter, ui-sans-serif, -apple-system, BlinkMacSystemFont, "Segoe UI", Arial, sans-serif;
+    line-height: 1.45;
+    transition: background .25s ease, color .25s ease;
+}
+
+body, button, .card, .tracker-panel, .stat, .rp-stat-card, .rp-stat-detail,
+.change-item, table, th, td, .nav-card {
+    transition: background-color .22s ease, border-color .22s ease, color .22s ease, box-shadow .22s ease;
+}
+
+a { color: inherit; }
+
+button {
+    font: inherit;
+}
+
+.container {
+    width: min(1240px, calc(100% - 40px));
+    margin: 34px auto 52px;
+}
+
+.header {
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-start;
+    gap: 24px;
+    margin-bottom: 24px;
+}
+
+.header h1 {
+    margin: 0;
+    font-size: clamp(26px, 3vw, 34px);
+    line-height: 1.05;
+    letter-spacing: -.7px;
+}
+
+.header > div:first-child > span {
+    display: block;
+    margin-top: 8px;
+    color: var(--muted);
+    font-size: 13px;
+}
+
+.header-actions {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    flex-shrink: 0;
+}
+
+.header-actions a { text-decoration: none; }
+
+.theme-toggle, .update-button {
+    border-radius: 10px;
+    cursor: pointer;
+    font-weight: 800;
+}
+
+.theme-toggle {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    padding: 10px 13px;
+    background: var(--surface);
+    color: var(--text);
+    border: 1px solid var(--border);
+    box-shadow: var(--shadow-soft);
+}
+
+.theme-toggle:hover {
+    background: var(--surface-2);
+}
+
+.update-button {
+    border: 1px solid transparent;
+    background: var(--accent);
+    color: #fff;
+    padding: 11px 16px;
+    box-shadow: 0 10px 22px rgba(216, 63, 63, .18);
+}
+
+.update-button:hover {
+    filter: brightness(1.05);
+    transform: translateY(-1px);
+}
+
+.card, .nav-card {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    box-shadow: var(--shadow-soft);
+}
+
+.card {
+    margin-bottom: 16px;
+}
+
+.section-card {
+    overflow: hidden;
+}
+
+.tracker-panel {
+    max-width: 760px;
+    margin-top: 20px;
+    overflow: hidden;
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: var(--radius-sm);
+    box-shadow: var(--shadow-soft);
+}
+
+.tracker-toggle {
+    width: 100%;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 18px;
+    padding: 16px 18px;
+    border: 0;
+    border-radius: 0;
+    background: transparent;
+    color: var(--text);
+    text-align: left;
+    cursor: pointer;
+}
+
+.tracker-toggle:hover, .accordion-trigger:hover {
+    background: var(--surface-2);
+}
+
+.tracker-title-wrap {
+    min-width: 0;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    flex-wrap: wrap;
+}
+
+.tracker-title {
+    font-size: 14px;
+    font-weight: 850;
+}
+
+.tracker-status-badge {
+    display: inline-flex;
+    align-items: center;
+    min-height: 24px;
+    padding: 4px 8px;
+    border-radius: 999px;
+    background: rgba(67, 209, 122, .10);
+    font-size: 11px;
+    font-weight: 850;
+}
+
+.tracker-content {
+    padding: 0 18px 18px;
+}
+
+.tracker-details {
+    display: grid;
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    gap: 10px;
+    padding-top: 15px;
+    border-top: 1px solid var(--border-soft);
+}
+
+.tracker-details > div {
+    min-width: 0;
+    padding: 13px 14px;
+    background: var(--surface-2);
+    border: 1px solid var(--border-soft);
+    border-radius: 10px;
+}
+
+.tracker-detail-label {
+    color: var(--muted-2);
+    font-size: 10px;
+    font-weight: 850;
+    letter-spacing: .85px;
+    text-transform: uppercase;
+}
+
+.tracker-detail-value {
+    margin-top: 5px;
+    color: var(--text);
+    font-size: 13px;
+    font-weight: 650;
+    overflow-wrap: anywhere;
+}
+
+.countdown {
+    color: var(--text);
+    font-size: 18px;
+    font-weight: 900;
+}
+
+.tracker-online { color: var(--positive); }
+.tracker-offline {
+    color: var(--negative);
+    background: rgba(239, 100, 100, .10);
+}
+
+.accordion-trigger {
+    width: 100%;
+    margin: 0;
+    padding: 17px 20px;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 14px;
+    background: transparent;
+    color: var(--text);
+    border: 0;
+    border-radius: 0;
+    text-align: left;
+    cursor: pointer;
+}
+
+.accordion-title-wrap {
+    min-width: 0;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+}
+
+.section-dot {
+    width: 7px;
+    height: 7px;
+    flex: 0 0 7px;
+    border-radius: 50%;
+    background: var(--accent);
+    box-shadow: 0 0 0 5px var(--accent-soft);
+}
+
+.accordion-title {
+    min-width: 0;
+    font-size: 16px;
+    font-weight: 850;
+    letter-spacing: -.15px;
+}
+
+.accordion-count {
+    min-width: 26px;
+    height: 24px;
+    padding: 0 8px;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    border-radius: 999px;
+    background: var(--surface-3);
+    color: var(--muted);
+    font-size: 10px;
+    font-weight: 850;
+    white-space: nowrap;
+}
+
+.accordion-chevron {
+    width: 30px;
+    height: 30px;
+    flex: 0 0 30px;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    border: 1px solid var(--border);
+    border-radius: 9px;
+    color: var(--muted);
+    background: var(--surface);
+    font-size: 14px;
+    transition: transform .2s ease, background-color .2s ease, color .2s ease;
+}
+
+.accordion-trigger[aria-expanded="true"] .accordion-chevron {
+    transform: rotate(180deg);
+    color: var(--text);
+    background: var(--surface-2);
+}
+
+.accordion-content {
+    display: grid;
+    grid-template-rows: 0fr;
+    transition: grid-template-rows .24s ease;
+}
+
+.accordion-content.is-open {
+    grid-template-rows: 1fr;
+}
+
+.accordion-content-inner {
+    min-height: 0;
+    overflow: hidden;
+}
+
+.accordion-body {
+    padding: 0 20px 20px;
+    border-top: 1px solid var(--border-soft);
+}
+
+.accordion-body > *:first-child {
+    margin-top: 18px;
+}
+
+/* Oyuncu özeti */
+.player-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    gap: 20px;
+    margin-bottom: 18px;
+    padding: 2px;
+}
+
+.player-name {
+    min-width: 0;
+    color: var(--text);
+    font-size: clamp(22px, 3vw, 28px);
+    font-weight: 900;
+    letter-spacing: -.5px;
+    overflow-wrap: anywhere;
+}
+
+.uid {
+    margin-top: 4px;
+    color: var(--muted);
+    font-size: 12px;
+    overflow-wrap: anywhere;
+}
+
+.player-header > div:last-child {
+    flex-shrink: 0;
+    padding: 7px 10px;
+    border: 1px solid var(--border);
+    border-radius: 999px;
+    color: var(--muted);
+    background: var(--surface-2);
+    font-size: 11px;
+    font-weight: 850;
+}
+
+.stats {
+    display: grid;
+    grid-template-columns: repeat(4, minmax(0, 1fr));
+    gap: 11px;
+}
+
+.stat {
+    min-width: 0;
+    padding: 17px;
+    background: var(--surface-2);
+    border: 1px solid var(--border-soft);
+    border-radius: 12px;
+}
+
+.stat:hover {
+    transform: translateY(-1px);
+    box-shadow: var(--shadow-soft);
+}
+
+.label {
+    color: var(--muted-2);
+    font-size: 10px;
+    font-weight: 900;
+    letter-spacing: 1px;
+}
+
+.value {
+    min-width: 0;
+    margin-top: 8px;
+    color: var(--text);
+    font-size: clamp(20px, 2.5vw, 25px);
+    font-weight: 900;
+    overflow-wrap: anywhere;
+}
+
+.stats .stat:last-child {
+    position: relative;
+    overflow: hidden;
+    background: linear-gradient(135deg, var(--accent-soft), transparent 70%), var(--surface-2);
+}
+
+.stats .stat:last-child::after {
+    content: "RP";
+    position: absolute;
+    top: 14px;
+    right: 15px;
+    color: var(--muted-2);
+    font-size: 9px;
+    font-weight: 900;
+    letter-spacing: 1px;
+}
+
+.change-positive, .rp-positive, .positive { color: var(--positive); }
+.change-negative, .rp-negative, .negative { color: var(--negative); }
+.change-neutral, .rp-neutral, .neutral { color: var(--muted); }
+
+/* RP istatistikleri */
+.rp-stat-section { margin: 0; }
+
+.rp-stat-grid {
+    display: grid;
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    gap: 11px;
+}
+
+.rp-stat-card {
+    min-width: 0;
+    background: var(--surface-2);
+    border: 1px solid var(--border-soft);
+    border-radius: 13px;
+    padding: 17px;
+}
+
+.rp-stat-card:hover { box-shadow: var(--shadow-soft); }
+
+.rp-stat-title {
+    color: var(--text);
+    font-size: 14px;
+    font-weight: 850;
+    margin-bottom: 15px;
+}
+
+.rp-stat-main {
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-end;
+    gap: 18px;
+    margin-bottom: 17px;
+}
+
+.rp-stat-net {
+    font-size: 27px;
+    font-weight: 900;
+    letter-spacing: -.5px;
+}
+
+.rp-stat-label {
+    color: var(--muted-2);
+    font-size: 9px;
+    font-weight: 900;
+    letter-spacing: .85px;
+    text-transform: uppercase;
+    margin-bottom: 4px;
+}
+
+.rp-stat-value {
+    color: var(--text);
+    font-size: 15px;
+    font-weight: 850;
+    overflow-wrap: anywhere;
+}
+
+.rp-stat-details {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 9px;
+}
+
+.rp-stat-detail {
+    min-width: 0;
+    background: var(--surface-3);
+    border-radius: 9px;
+    padding: 10px 11px;
+}
+
+.rp-stat-detail.gained { border-left: 3px solid var(--positive); }
+.rp-stat-detail.lost { border-left: 3px solid var(--negative); }
+
+.rp-period {
+    color: var(--muted);
+    font-size: 11px;
+    margin-top: 4px;
+}
+
+/* Grafik */
+.graph-inner-card {
+    background: transparent;
+    border: 0;
+    padding: 0;
+    margin: 0;
+}
+
+.graph-inner-card h2 { display: none; }
+
+.chart-container {
+    position: relative;
+    width: 100%;
+    height: 360px;
+    padding-top: 8px;
+}
+
+/* Son değişiklikler */
+.change-list {
+    display: flex;
+    flex-direction: column;
+    gap: 9px;
+}
+
+.change-item {
+    min-width: 0;
+    display: grid;
+    grid-template-columns: 42px minmax(0, 1fr) minmax(120px, auto);
+    align-items: center;
+    gap: 12px;
+    padding: 13px;
+    background: var(--surface-2);
+    border: 1px solid var(--border-soft);
+    border-left: 3px solid var(--border);
+    border-radius: 11px;
+}
+
+.change-item:hover {
+    background: var(--surface-3);
+    transform: translateX(2px);
+}
+
+.change-item.rp-positive { border-left-color: var(--positive); }
+.change-item.rp-negative { border-left-color: var(--negative); }
+.change-item.rank { border-left-color: var(--purple); }
+.change-item.level { border-left-color: var(--blue); }
+
+.change-icon {
+    width: 38px;
+    height: 38px;
+    flex: 0 0 38px;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    background: var(--surface-3);
+    border: 1px solid var(--border);
+    border-radius: 11px;
+    font-size: 16px;
+}
+
+.change-content { min-width: 0; }
+
+.change-title {
+    font-size: 13px;
+    font-weight: 900;
+    overflow-wrap: anywhere;
+}
+
+.change-description {
+    margin-top: 4px;
+    color: var(--muted);
+    font-size: 12px;
+    overflow-wrap: anywhere;
+}
+
+.change-date {
+    color: var(--muted-2);
+    font-size: 10px;
+    text-align: right;
+    white-space: normal;
+    overflow-wrap: anywhere;
+}
+
+.rp-up { color: var(--positive); }
+.rp-down { color: var(--negative); }
+.rank-change { color: var(--purple); }
+.level-change { color: var(--blue); }
+
+.no-changes {
+    padding: 28px 12px;
+    color: var(--muted);
+    text-align: center;
+}
+
+/* Son kontroller tablosu */
+.table-wrap {
+    width: 100%;
+    overflow-x: auto;
+    overflow-y: hidden;
+    border: 1px solid var(--border-soft);
+    border-radius: 12px;
+    background: var(--surface-2);
+    -webkit-overflow-scrolling: touch;
+}
+
+table {
+    width: 100%;
+    min-width: 0;
+    table-layout: fixed;
+    border-collapse: separate;
+    border-spacing: 0;
+}
+
+col.col-date { width: 21%; }
+col.col-player { width: 20%; }
+col.col-level { width: 9%; }
+col.col-rank { width: 22%; }
+col.col-rp { width: 12%; }
+col.col-change { width: 16%; }
+
+th, td {
+    min-width: 0;
+    max-width: 0;
+    padding: 12px 11px;
+    border-bottom: 1px solid var(--border-soft);
+    text-align: left;
+    overflow-wrap: anywhere;
+    word-break: break-word;
+}
+
+th {
+    color: var(--muted);
+    background: var(--surface);
+    font-size: 9px;
+    font-weight: 900;
+    letter-spacing: .8px;
+    text-transform: uppercase;
+}
+
+td {
+    color: var(--text);
+    font-size: 11px;
+    font-weight: 650;
+    vertical-align: middle;
+}
+
+tbody tr:last-child td { border-bottom: 0; }
+
+tbody tr:hover td { background: var(--surface-3); }
+
+.check-change-cell { text-align: left; }
+
+.check-change {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    min-width: 52px;
+    padding: 4px 7px;
+    border-radius: 999px;
+    font-weight: 900;
+    font-size: 10px;
+    white-space: nowrap;
+}
+
+.check-change.positive {
+    color: var(--positive);
+    background: rgba(67, 209, 122, .10);
+}
+
+.check-change.negative {
+    color: var(--negative);
+    background: rgba(239, 100, 100, .10);
+}
+
+.check-change.neutral {
+    color: var(--muted);
+    background: var(--surface-3);
+}
+
+.change-arrow { margin-right: 3px; }
+
+/* Navigasyon / boş durum */
+.nav-card {
+    margin-bottom: 16px;
+    overflow: hidden;
+}
+
+.history-link {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    gap: 18px;
+    padding: 15px 18px;
+    text-decoration: none;
+    color: var(--text);
+    font-size: 13px;
+    font-weight: 850;
+}
+
+.history-link:hover { background: var(--surface-2); }
+
+.empty-card {
+    padding: 42px 24px;
+    margin-bottom: 0;
+    text-align: center;
+}
+
+.empty-icon {
+    width: 48px;
+    height: 48px;
+    margin: 0 auto 10px;
+    display: grid;
+    place-items: center;
+    border: 1px solid var(--border);
+    border-radius: 50%;
+    color: var(--muted);
+    background: var(--surface-2);
+    font-size: 24px;
+}
+
+.empty-card h2 { margin: 0 0 4px; font-size: 20px; }
+.empty-card p { margin: 0; color: var(--muted); font-size: 13px; }
+
+@media (max-width: 980px) {
+    .container { width: min(100% - 28px, 860px); }
+    .header { flex-direction: column; }
+    .header-actions { width: 100%; }
+    .tracker-panel { max-width: 100%; }
+    .stats { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+    .rp-stat-grid { grid-template-columns: 1fr; }
+}
+
+@media (max-width: 680px) {
+    .container {
+        width: min(100% - 20px, 620px);
+        margin-top: 18px;
+    }
+
+    .header-actions {
+        display: grid;
+        grid-template-columns: 1fr auto;
+        width: 100%;
+    }
+
+    .theme-toggle, .update-button {
+        width: 100%;
+        justify-content: center;
+    }
+
+    .header-actions a {
+        display: block;
+        width: 100%;
+    }
+
+    .tracker-details { grid-template-columns: 1fr; }
+
+    .accordion-trigger { padding: 15px 16px; }
+    .accordion-body { padding: 0 16px 16px; }
+    .accordion-title { font-size: 14px; }
+
+    .stats {
+        grid-template-columns: 1fr 1fr;
+        gap: 8px;
+    }
+
+    .stat { padding: 14px; }
+
+    .player-header {
+        align-items: flex-start;
+    }
+
+    .change-item {
+        grid-template-columns: 38px minmax(0, 1fr);
+    }
+
+    .change-date {
+        grid-column: 2;
+        margin-top: -4px;
+        text-align: left;
+    }
+
+    .chart-container { height: 300px; }
+
+    table {
+        min-width: 720px;
+    }
+}
+
+@media (max-width: 460px) {
+    .header-actions {
+        grid-template-columns: 1fr;
+    }
+
+    .stats { grid-template-columns: 1fr; }
+
+    .player-header {
+        flex-direction: column;
+        gap: 12px;
+    }
+
+    .rp-stat-main {
+        align-items: flex-start;
+        flex-direction: column;
+        gap: 10px;
+    }
+
+    .rp-stat-details { grid-template-columns: 1fr; }
+}
+
+</style>
+
+
+<script>
+(function () {
+    try {
+        var savedTheme = localStorage.getItem("apexTrackerTheme") || "dark";
+        document.documentElement.setAttribute("data-theme", savedTheme);
+    } catch (error) {
+        document.documentElement.setAttribute("data-theme", "dark");
+    }
+})();
+</script>
+
+</head>
+
+<body>
+
+<div class="container">
+
+<div class="header">
+
+<div>
+
+<h1>APEX TRACKER</h1>
+
+<span>UID tabanlı oyuncu takip sistemi</span>
+
+
+<div class="tracker-panel">
+    <button type="button" class="tracker-toggle"
+            aria-expanded="true"
+            aria-controls="trackerDetailsContent"
+            data-accordion-target="trackerDetailsContent">
+        <span class="tracker-title-wrap">
+            <span class="tracker-title">Otomatik Takip</span>
+            <span id="trackerStatus" class="tracker-online tracker-status-badge">● AKTİF</span>
+        </span>
+        <span class="accordion-chevron" aria-hidden="true">⌄</span>
+    </button>
+
+    <div id="trackerDetailsContent" class="accordion-content is-open">
+        <div class="tracker-content">
+            <div class="tracker-details">
+                <div>
+                    <div class="tracker-detail-label">Son başarılı sorgu</div>
+                    <div id="lastCheck" class="tracker-detail-value">Bekleniyor...</div>
+                </div>
+                <div>
+                    <div class="tracker-detail-label">Sonraki sorgu</div>
+                    <div id="nextCheck" class="tracker-detail-value">Hesaplanıyor...</div>
+                </div>
+                <div>
+                    <div class="tracker-detail-label">Kalan süre</div>
+                    <div id="countdown" class="countdown">--</div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+
+</div>
+
+
+<div class="header-actions">
+    <button type="button" class="theme-toggle" id="themeToggle" aria-label="Tema değiştir">
+        <span id="themeIcon">☾</span>
+        <span id="themeLabel">Koyu Tema</span>
+    </button>
+    <a href="/update">
+        <button class="update-button" type="button">↻ Şimdi Güncelle</button>
+    </a>
+</div>
+
+
+</div>
+
+
+
+{% if player %}
+
+<div class="card accordion-card section-card player-section-card">
+    <button type="button" class="accordion-trigger" aria-expanded="true" aria-controls="playerSummaryContent" data-accordion-target="playerSummaryContent">
+        <span class="accordion-title-wrap">
+            <span class="section-dot"></span>
+            <span class="accordion-title">Oyuncu Özeti</span>
+            <span class="accordion-count">4 bilgi</span>
+        </span>
+        <span class="accordion-chevron" aria-hidden="true">⌄</span>
+    </button>
+    <div id="playerSummaryContent" class="accordion-content is-open">
+        <div class="accordion-content-inner">
+            <div class="accordion-body">
+
+
+<div class="player-header">
+
+<div>
+
+<div class="player-name">
+{{ player["name"] }}
+</div>
+
+<div class="uid">
+UID: {{ player["uid"] }}
+</div>
+
+</div>
+
+<div>
+{{ player["platform"] }}
+</div>
+
+</div>
+
+
+<div class="stats">
+
+
+<div class="stat">
+
+<div class="label">
+LEVEL
+</div>
+
+<div class="value">
+{{ player["level"] }}
+</div>
+
+</div>
+
+
+<div class="stat">
+
+<div class="label">
+RANK
+</div>
+
+<div class="value">
+
+{{ player["rank_name"] }}
+
+{{ player["rank_div"] }}
+
+</div>
+
+</div>
+
+
+<div class="stat">
+
+<div class="label">
+RP
+</div>
+
+<div class="value">
+{{ player["rank_score"] }}
+</div>
+
+</div>
+
+
+<div class="stat">
+
+<div class="label">
+SON RP DEĞİŞİMİ
+</div>
+
+<div class="value
+
+{% if rp_change > 0 %}
+change-positive
+{% elif rp_change < 0 %}
+change-negative
+{% endif %}
+
+">
+
+{% if rp_change > 0 %}
++
+{% endif %}
+
+{{ rp_change }}
+
+</div>
+</div>
+</div>
+
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="card accordion-card section-card rp-section-card">
+    <button type="button" class="accordion-trigger" aria-expanded="true" aria-controls="rpStatsContent" data-accordion-target="rpStatsContent">
+        <span class="accordion-title-wrap">
+            <span class="section-dot"></span>
+            <span class="accordion-title">RP İstatistikleri</span>
+            <span class="accordion-count">3 dönem</span>
+        </span>
+        <span class="accordion-chevron" aria-hidden="true">⌄</span>
+    </button>
+    <div id="rpStatsContent" class="accordion-content is-open">
+        <div class="accordion-content-inner">
+            <div class="accordion-body">
+<div class="rp-stat-section">
+
+    <div class="rp-stat-grid">
+
+
+        <!-- ================= BUGÜN ================= -->
+
+        <div class="rp-stat-card">
+
+            <div class="rp-stat-title">
+                Bugün
+            </div>
+
+            <div class="rp-stat-main">
+
+                <div>
+
+                    <div class="rp-stat-label">
+                        Net RP
+                    </div>
+
+                    <div class="rp-stat-net
+
+                    {% if daily_stats.net_change > 0 %}
+                        rp-positive
+                    {% elif daily_stats.net_change < 0 %}
+                        rp-negative
+                    {% else %}
+                        rp-neutral
+                    {% endif %}
+
+                    ">
+
+                        {% if daily_stats.net_change > 0 %}
+                            +
+                        {% endif %}
+
+                        {{ daily_stats.net_change }}
+
+                    </div>
+
+                </div>
+
+
+                <div>
+
+                    <div class="rp-stat-label">
+                        Mevcut
+                    </div>
+
+                    <div class="rp-stat-value">
+
+                        {{ daily_stats.current_rp
+                           if daily_stats.current_rp is not none
+                           else "-" }}
+
+                    </div>
+
+                </div>
+
+            </div>
+
+
+            <div class="rp-stat-details">
+
+                <div class="rp-stat-detail gained">
+
+                    <div class="rp-stat-label">
+                        Kazanılan
+                    </div>
+
+                    <div class="rp-stat-value rp-positive">
+
+                        +{{ daily_stats.gained }}
+
+                    </div>
+
+                </div>
+
+
+                <div class="rp-stat-detail lost">
+
+                    <div class="rp-stat-label">
+                        Kaybedilen
+                    </div>
+
+                    <div class="rp-stat-value rp-negative">
+
+                        -{{ daily_stats.lost }}
+
+                    </div>
+
+                </div>
+
+            </div>
+
+        </div>
+
+
+        <!-- ================= 24 SAAT ================= -->
+
+        <div class="rp-stat-card">
+
+            <div class="rp-stat-title">
+                Son 24 Saat
+            </div>
+
+            <div class="rp-stat-main">
+
+                <div>
+
+                    <div class="rp-stat-label">
+                        Net RP
+                    </div>
+
+                    <div class="rp-stat-net
+
+                    {% if stats_24h.net_change > 0 %}
+                        rp-positive
+                    {% elif stats_24h.net_change < 0 %}
+                        rp-negative
+                    {% else %}
+                        rp-neutral
+                    {% endif %}
+
+                    ">
+
+                        {% if stats_24h.net_change > 0 %}
+                            +
+                        {% endif %}
+
+                        {{ stats_24h.net_change }}
+
+                    </div>
+
+                </div>
+
+
+                <div>
+
+                    <div class="rp-stat-label">
+                        Mevcut
+                    </div>
+
+                    <div class="rp-stat-value">
+
+                        {{ stats_24h.current_rp
+                           if stats_24h.current_rp is not none
+                           else "-" }}
+
+                    </div>
+
+                </div>
+
+            </div>
+
+
+            <div class="rp-stat-details">
+
+                <div class="rp-stat-detail gained">
+
+                    <div class="rp-stat-label">
+                        Kazanılan
+                    </div>
+
+                    <div class="rp-stat-value rp-positive">
+
+                        +{{ stats_24h.gained }}
+
+                    </div>
+
+                </div>
+
+
+                <div class="rp-stat-detail lost">
+
+                    <div class="rp-stat-label">
+                        Kaybedilen
+                    </div>
+
+                    <div class="rp-stat-value rp-negative">
+
+                        -{{ stats_24h.lost }}
+
+                    </div>
+
+                </div>
+
+            </div>
+
+        </div>
+
+
+        <!-- ================= 1 SAAT ================= -->
+
+        <div class="rp-stat-card">
+
+            <div class="rp-stat-title">
+                Son 1 Saat
+            </div>
+
+            <div class="rp-stat-main">
+
+                <div>
+
+                    <div class="rp-stat-label">
+                        Net RP
+                    </div>
+
+                    <div class="rp-stat-net
+
+                    {% if stats_1h.net_change > 0 %}
+                        rp-positive
+                    {% elif stats_1h.net_change < 0 %}
+                        rp-negative
+                    {% else %}
+                        rp-neutral
+                    {% endif %}
+
+                    ">
+
+                        {% if stats_1h.net_change > 0 %}
+                            +
+                        {% endif %}
+
+                        {{ stats_1h.net_change }}
+
+                    </div>
+
+                </div>
+
+
+                <div>
+
+                    <div class="rp-stat-label">
+                        Mevcut
+                    </div>
+
+                    <div class="rp-stat-value">
+
+                        {{ stats_1h.current_rp
+                           if stats_1h.current_rp is not none
+                           else "-" }}
+
+                    </div>
+
+                </div>
+
+            </div>
+
+
+            <div class="rp-stat-details">
+
+                <div class="rp-stat-detail gained">
+
+                    <div class="rp-stat-label">
+                        Kazanılan
+                    </div>
+
+                    <div class="rp-stat-value rp-positive">
+
+                        +{{ stats_1h.gained }}
+
+                    </div>
+
+                </div>
+
+
+                <div class="rp-stat-detail lost">
+
+                    <div class="rp-stat-label">
+                        Kaybedilen
+                    </div>
+
+                    <div class="rp-stat-value rp-negative">
+
+                        -{{ stats_1h.lost }}
+
+                    </div>
+
+                </div>
+
+            </div>
+
+        </div>
+
+
+    </div>
+
+</div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="card accordion-card section-card chart-section-card">
+    <button type="button" class="accordion-trigger" aria-expanded="true" aria-controls="rpChartContent" data-accordion-target="rpChartContent">
+        <span class="accordion-title-wrap">
+            <span class="section-dot"></span>
+            <span class="accordion-title">RP Geçmişi</span>
+            <span class="accordion-count">Grafik</span>
+        </span>
+        <span class="accordion-chevron" aria-hidden="true">⌄</span>
+    </button>
+    <div id="rpChartContent" class="accordion-content is-open">
+        <div class="accordion-content-inner">
+            <div class="accordion-body">
+<div class="graph-inner-card">
+
+<h2>RP Geçmişi</h2>
+
+<div class="chart-container">
+
+<canvas id="rpChart"></canvas>
+
+</div>
+
+</div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- ================= YENİ: HAFTALIK RP TRENDLERİ ================= -->
+<div class="card accordion-card section-card chart-section-card">
+    <button type="button" class="accordion-trigger" aria-expanded="true" aria-controls="weeklyTrendsContent" data-accordion-target="weeklyTrendsContent">
+        <span class="accordion-title-wrap">
+            <span class="section-dot"></span>
+            <span class="accordion-title">Haftalık RP Trendleri</span>
+            <span class="accordion-count">7 Gün</span>
+        </span>
+        <span class="accordion-chevron" aria-hidden="true">⌄</span>
+    </button>
+    <div id="weeklyTrendsContent" class="accordion-content is-open">
+        <div class="accordion-content-inner">
+            <div class="accordion-body">
+                <div class="graph-inner-card">
+                    <h2>Haftalık RP Trendleri</h2>
+                    <div class="chart-container">
+                        <canvas id="weeklyTrendsChart"></canvas>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- ================= YENİ: RANK DAĞILIMI ================= -->
+<div class="card accordion-card section-card chart-section-card">
+    <button type="button" class="accordion-trigger" aria-expanded="true" aria-controls="rankDistContent" data-accordion-target="rankDistContent">
+        <span class="accordion-title-wrap">
+            <span class="section-dot"></span>
+            <span class="accordion-title">Rank Dağılımı</span>
+            <span class="accordion-count">Kayıt</span>
+        </span>
+        <span class="accordion-chevron" aria-hidden="true">⌄</span>
+    </button>
+    <div id="rankDistContent" class="accordion-content is-open">
+        <div class="accordion-content-inner">
+            <div class="accordion-body">
+                <div class="graph-inner-card">
+                    <h2>Rank Dağılımı</h2>
+                    <div class="chart-container">
+                        <canvas id="rankDistChart"></canvas>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- ================= YENİ: GÜNLÜK RP ÖZETİ ================= -->
+<div class="card accordion-card section-card chart-section-card">
+    <button type="button" class="accordion-trigger" aria-expanded="true" aria-controls="dailyRpContent" data-accordion-target="dailyRpContent">
+        <span class="accordion-title-wrap">
+            <span class="section-dot"></span>
+            <span class="accordion-title">Günlük RP Özeti</span>
+            <span class="accordion-count">7 Gün</span>
+        </span>
+        <span class="accordion-chevron" aria-hidden="true">⌄</span>
+    </button>
+    <div id="dailyRpContent" class="accordion-content is-open">
+        <div class="accordion-content-inner">
+            <div class="accordion-body">
+                <div class="graph-inner-card">
+                    <h2>Günlük RP Özeti (Maks - Min)</h2>
+                    <div class="chart-container">
+                        <canvas id="dailyRpChart"></canvas>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="card accordion-card section-card changes-section-card">
+    <button type="button" class="accordion-trigger" aria-expanded="true" aria-controls="recentChangesContent" data-accordion-target="recentChangesContent">
+        <span class="accordion-title-wrap">
+            <span class="section-dot"></span>
+            <span class="accordion-title">Son Değişiklikler</span>
+            <span class="accordion-count">{{ changes|length }}</span>
+        </span>
+        <span class="accordion-chevron" aria-hidden="true">⌄</span>
+    </button>
+    <div id="recentChangesContent" class="accordion-content is-open">
+        <div class="accordion-content-inner">
+            <div class="accordion-body">
+{% if changes %}
+
+    <div class="change-list">
+
+        {% for change in changes %}
+
+            {% if change["change_type"] == "RP" %}
+
+                {% if change["difference"] > 0 %}
+
+                <div class="change-item rp-positive">
+
+                    <div class="change-icon">
+                        ↗
+                    </div>
+
+                    <div class="change-content">
+
+                        <div class="change-title rp-up">
+                            RP Artışı
+                        </div>
+
+                        <div class="change-description">
+
+                            {{ change["old_value"] }}
+                            →
+                            {{ change["new_value"] }}
+
+                            &nbsp;&nbsp;
+
+                            <strong>
+                                +{{ change["difference"] }} RP
+                            </strong>
+
+                        </div>
+
+                    </div>
+
+                    <div class="change-date">
+                        {{ change["recorded_at"] }}
+                    </div>
+
+                </div>
+
+                {% else %}
+
+                <div class="change-item rp-negative">
+
+                    <div class="change-icon">
+                        ↘
+                    </div>
+
+                    <div class="change-content">
+
+                        <div class="change-title rp-down">
+                            RP Kaybı
+                        </div>
+
+                        <div class="change-description">
+
+                            {{ change["old_value"] }}
+                            →
+                            {{ change["new_value"] }}
+
+                            &nbsp;&nbsp;
+
+                            <strong>
+                                {{ change["difference"] }} RP
+                            </strong>
+
+                        </div>
+
+                    </div>
+
+                    <div class="change-date">
+                        {{ change["recorded_at"] }}
+                    </div>
+
+                </div>
+
+                {% endif %}
+
+
+            {% elif change["change_type"] == "RANK" %}
+
+                <div class="change-item rank">
+
+                    <div class="change-icon">
+                        ◆
+                    </div>
+
+                    <div class="change-content">
+
+                        <div class="change-title rank-change">
+                            Rank Değişikliği
+                        </div>
+
+                        <div class="change-description">
+
+                            <strong>
+                                {{ change["old_value"] }}
+                            </strong>
+
+                            →
+                            
+                            <strong>
+                                {{ change["new_value"] }}
+                            </strong>
+
+                        </div>
+
+                    </div>
+
+                    <div class="change-date">
+                        {{ change["recorded_at"] }}
+                    </div>
+
+                </div>
+
+
+            {% elif change["change_type"] == "LEVEL" %}
+
+                <div class="change-item level">
+
+                    <div class="change-icon">
+                        ↑
+                    </div>
+
+                    <div class="change-content">
+
+                        <div class="change-title level-change">
+                            Level Değişikliği
+                        </div>
+
+                        <div class="change-description">
+
+                            Level
+
+                            <strong>
+                                {{ change["old_value"] }}
+                            </strong>
+
+                            →
+
+                            <strong>
+                                {{ change["new_value"] }}
+                            </strong>
+
+                            {% if change["difference"] > 0 %}
+
+                                &nbsp;
+
+                                <span class="level-change">
+                                    (+{{ change["difference"] }})
+                                </span>
+
+                            {% endif %}
+
+                        </div>
+
+                    </div>
+
+                    <div class="change-date">
+                        {{ change["recorded_at"] }}
+                    </div>
+
+                </div>
+
+
+            {% elif change["change_type"] == "NAME" %}
+
+                <div class="change-item">
+
+                    <div class="change-icon">
+                        ✎
+                    </div>
+
+                    <div class="change-content">
+
+                        <div class="change-title">
+                            Oyuncu Adı Değişti
+                        </div>
+
+                        <div class="change-description">
+
+                            {{ change["old_value"] }}
+
+                            →
+
+                            {{ change["new_value"] }}
+
+                        </div>
+
+                    </div>
+
+                    <div class="change-date">
+                        {{ change["recorded_at"] }}
+                    </div>
+
+                </div>
+
+            {% endif %}
+
+        {% endfor %}
+
+    </div>
+
+    {% else %}
+
+        <div class="no-changes">
+
+            Henüz bir değişiklik algılanmadı.
+
+        </div>
+
+    {% endif %}
+
+
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="card accordion-card section-card checks-section-card">
+    <button type="button" class="accordion-trigger" aria-expanded="true" aria-controls="recentChecksContent" data-accordion-target="recentChecksContent">
+        <span class="accordion-title-wrap">
+            <span class="section-dot"></span>
+            <span class="accordion-title">Son Kontroller</span>
+            <span class="accordion-count">{{ history|length }}</span>
+        </span>
+        <span class="accordion-chevron" aria-hidden="true">⌄</span>
+    </button>
+    <div id="recentChecksContent" class="accordion-content is-open">
+        <div class="accordion-content-inner">
+            <div class="accordion-body">
+<div class="table-wrap">
+    <table id="recentChecksTable">
+        <colgroup>
+            <col class="col-date">
+            <col class="col-player">
+            <col class="col-level">
+            <col class="col-rank">
+            <col class="col-rp">
+            <col class="col-change">
+        </colgroup>
+        <thead>
+            <tr>
+                <th>Tarih</th>
+                <th>Oyuncu</th>
+                <th>Level</th>
+                <th>Rank</th>
+                <th>RP</th>
+                <th>Değişim</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for record in history %}
+            <tr data-rp="{{ record['rank_score'] or 0 }}">
+                <td title="{{ record['recorded_at'] }}">{{ record["recorded_at"] }}</td>
+                <td title="{{ record['name'] }}">{{ record["name"] }}</td>
+                <td>{{ record["level"] }}</td>
+                <td title="{{ record['rank_name'] }} {{ record['rank_div'] }}">
+                    {{ record["rank_name"] }} {{ record["rank_div"] }}
+                </td>
+                <td>{{ record["rank_score"] }}</td>
+                <td class="check-change-cell">
+                    <span class="check-change neutral">-</span>
+                </td>
+            </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+</div>
+
+
+
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="nav-card">
+    <a href="/history" class="history-link">
+        <span>Tüm geçmişi görüntüle</span>
+        <span>→</span>
+    </a>
+</div>
+
+{% else %}
+
+<div class="card empty-card">
+    <div class="empty-icon">◌</div>
+    <h2>Henüz veri yok</h2>
+    <p>İlk başarılı sorgu sonrasında oyuncu verileri burada görünecek.</p>
+</div>
+
+{% endif %}
+
+
+</div>
+
+
+
+<script>
+const historyData = [
+{% for record in history|reverse %}
+{
+    date: "{{ record['recorded_at'] }}",
+    rp: {{ record['rank_score'] or 0 }}
+},
+{% endfor %}
+];
+
+(function () {
+    const chartCanvas = document.getElementById("rpChart");
+    if (!chartCanvas || typeof Chart === "undefined") return;
+
+    function css(name, fallback) {
+        return getComputedStyle(document.documentElement).getPropertyValue(name).trim() || fallback;
+    }
+
+    function renderChart() {
+        if (window.__apexRPChart) {
+            window.__apexRPChart.destroy();
+        }
+
+        const textColor = css("--muted", "#777");
+        const gridColor = css("--border-soft", "#292e37");
+        const lineColor = css("--accent", "#eb4d4d");
+
+        window.__apexRPChart = new Chart(chartCanvas, {
+            type: "line",
+            data: {
+                labels: historyData.map(item => item.date),
+                datasets: [{
+                    label: "RP",
+                    data: historyData.map(item => item.rp),
+                    borderWidth: 2.5,
+                    borderColor: lineColor,
+                    backgroundColor: "transparent",
+                    tension: 0.32,
+                    pointRadius: 2.5,
+                    pointHoverRadius: 5,
+                    pointBorderWidth: 0,
+                    pointBackgroundColor: lineColor
+                }]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                interaction: { mode: "index", intersect: false },
+                plugins: {
+                    legend: { display: false },
+                    tooltip: {
+                        displayColors: false,
+                        callbacks: {
+                            label: function (context) {
+                                return " RP: " + context.parsed.y;
+                            }
+                        }
+                    }
+                },
+                scales: {
+                    x: {
+                        ticks: {
+                            color: textColor,
+                            maxRotation: 0,
+                            autoSkip: true,
+                            maxTicksLimit: 8
+                        },
+                        grid: { color: gridColor }
+                    },
+                    y: {
+                        ticks: { color: textColor },
+                        grid: { color: gridColor }
+                    }
+                }
+            }
+        });
+    }
+
+    renderChart();
+    window.addEventListener("apex-theme-change", renderChart);
+})();
+
+// =========================================================
+// YENİ GRAFLER: Haftalık RP Trendleri
+// =========================================================
+const weeklyTrendsData = [
+{% for record in weekly_trends %}
+{
+    date: "{{ record['date'] }}",
+    rp: {{ record['rp'] }}
+},
+{% endfor %}
+];
+
+(function () {
+    const chartCanvas = document.getElementById("weeklyTrendsChart");
+    if (!chartCanvas || typeof Chart === "undefined") return;
+
+    function css(name, fallback) {
+        return getComputedStyle(document.documentElement).getPropertyValue(name).trim() || fallback;
+    }
+
+    function renderWeeklyChart() {
+        if (window.__apexWeeklyChart) {
+            window.__apexWeeklyChart.destroy();
+        }
+
+        const textColor = css("--muted", "#777");
+        const gridColor = css("--border-soft", "#292e37");
+        const lineColor = css("--blue", "#6ea9ff");
+
+        window.__apexWeeklyChart = new Chart(chartCanvas, {
+            type: "line",
+            data: {
+                labels: weeklyTrendsData.map(item => item.date),
+                datasets: [{
+                    label: "RP",
+                    data: weeklyTrendsData.map(item => item.rp),
+                    borderWidth: 2.5,
+                    borderColor: lineColor,
+                    backgroundColor: "transparent",
+                    tension: 0.32,
+                    pointRadius: 3,
+                    pointHoverRadius: 6,
+                    pointBorderWidth: 0,
+                    pointBackgroundColor: lineColor,
+                    fill: true,
+                    backgroundColor: function(context) {
+                        const ctx = context.chart.ctx;
+                        const gradient = ctx.createLinearGradient(0, 0, 0, 300);
+                        gradient.addColorStop(0, "rgba(110, 169, 255, 0.25)");
+                        gradient.addColorStop(1, "rgba(110, 169, 255, 0)");
+                        return gradient;
+                    }
+                }]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                interaction: { mode: "index", intersect: false },
+                plugins: {
+                    legend: { display: false },
+                    tooltip: {
+                        displayColors: false,
+                        callbacks: {
+                            label: function (context) {
+                                return " RP: " + context.parsed.y;
+                            }
+                        }
+                    }
+                },
+                scales: {
+                    x: {
+                        ticks: {
+                            color: textColor,
+                            maxRotation: 0,
+                            autoSkip: true,
+                            maxTicksLimit: 7
+                        },
+                        grid: { color: gridColor }
+                    },
+                    y: {
+                        ticks: { color: textColor },
+                        grid: { color: gridColor }
+                    }
+                }
+            }
+        });
+    }
+
+    renderWeeklyChart();
+    window.addEventListener("apex-theme-change", renderWeeklyChart);
+})();
+
+// =========================================================
+// YENİ GRAFLER: Rank Dağılımı
+// =========================================================
+const rankDistData = [
+{% for record in rank_distribution %}
+{
+    rank: "{{ record['rank'] }}",
+    count: {{ record['count'] }}
+},
+{% endfor %}
+];
+
+(function () {
+    const chartCanvas = document.getElementById("rankDistChart");
+    if (!chartCanvas || typeof Chart === "undefined") return;
+
+    function css(name, fallback) {
+        return getComputedStyle(document.documentElement).getPropertyValue(name).trim() || fallback;
+    }
+
+    function renderRankDistChart() {
+        if (window.__apexRankDistChart) {
+            window.__apexRankDistChart.destroy();
+        }
+
+        const textColor = css("--muted", "#777");
+        const gridColor = css("--border-soft", "#292e37");
+        const barColor = css("--purple", "#b98cff");
+
+        window.__apexRankDistChart = new Chart(chartCanvas, {
+            type: "bar",
+            data: {
+                labels: rankDistData.map(item => item.rank),
+                datasets: [{
+                    label: "Kayıt Sayısı",
+                    data: rankDistData.map(item => item.count),
+                    backgroundColor: "rgba(185, 140, 255, 0.6)",
+                    borderColor: barColor,
+                    borderWidth: 1.5,
+                    borderRadius: 6,
+                    hoverBackgroundColor: "rgba(185, 140, 255, 0.8)"
+                }]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                plugins: {
+                    legend: { display: false },
+                    tooltip: {
+                        displayColors: false,
+                        callbacks: {
+                            label: function (context) {
+                                return " Kayıt: " + context.parsed.y;
+                            }
+                        }
+                    }
+                },
+                scales: {
+                    x: {
+                        ticks: { color: textColor },
+                        grid: { display: false }
+                    },
+                    y: {
+                        ticks: { color: textColor, stepSize: 1 },
+                        grid: { color: gridColor },
+                        beginAtZero: true
+                    }
+                }
+            }
+        });
+    }
+
+    renderRankDistChart();
+    window.addEventListener("apex-theme-change", renderRankDistChart);
+})();
+
+// =========================================================
+// YENİ GRAFLER: Günlük RP Özeti
+// =========================================================
+const dailyRpData = [
+{% for record in daily_rp_summary %}
+{
+    day: "{{ record['day'] }}",
+    max_rp: {{ record['max_rp'] }},
+    min_rp: {{ record['min_rp'] }}
+},
+{% endfor %}
+];
+
+(function () {
+    const chartCanvas = document.getElementById("dailyRpChart");
+    if (!chartCanvas || typeof Chart === "undefined") return;
+
+    function css(name, fallback) {
+        return getComputedStyle(document.documentElement).getPropertyValue(name).trim() || fallback;
+    }
+
+    function renderDailyRpChart() {
+        if (window.__apexDailyRpChart) {
+            window.__apexDailyRpChart.destroy();
+        }
+
+        const textColor = css("--muted", "#777");
+        const gridColor = css("--border-soft", "#292e37");
+        const maxColor = css("--positive", "#43d17a");
+        const minColor = css("--negative", "#ef6464");
+
+        window.__apexDailyRpChart = new Chart(chartCanvas, {
+            type: "bar",
+            data: {
+                labels: dailyRpData.map(item => item.day),
+                datasets: [
+                    {
+                        label: "Maks RP",
+                        data: dailyRpData.map(item => item.max_rp),
+                        backgroundColor: "rgba(67, 209, 122, 0.5)",
+                        borderColor: maxColor,
+                        borderWidth: 1.5,
+                        borderRadius: 4,
+                        hoverBackgroundColor: "rgba(67, 209, 122, 0.7)"
+                    },
+                    {
+                        label: "Min RP",
+                        data: dailyRpData.map(item => item.min_rp),
+                        backgroundColor: "rgba(239, 100, 100, 0.5)",
+                        borderColor: minColor,
+                        borderWidth: 1.5,
+                        borderRadius: 4,
+                        hoverBackgroundColor: "rgba(239, 100, 100, 0.7)"
+                    }
+                ]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                interaction: { mode: "index", intersect: false },
+                plugins: {
+                    legend: {
+                        display: true,
+                        labels: { color: textColor, boxWidth: 12 }
+                    },
+                    tooltip: {
+                        callbacks: {
+                            label: function (context) {
+                                return " " + context.dataset.label + ": " + context.parsed.y + " RP";
+                            }
+                        }
+                    }
+                },
+                scales: {
+                    x: {
+                        ticks: { color: textColor },
+                        grid: { display: false }
+                    },
+                    y: {
+                        ticks: { color: textColor },
+                        grid: { color: gridColor },
+                        beginAtZero: false
+                    }
+                }
+            }
+        });
+    }
+
+    renderDailyRpChart();
+    window.addEventListener("apex-theme-change", renderDailyRpChart);
+})();
+
+// 45 saniyede bir paneli yenile
+setTimeout(function () {
+    location.reload();
+}, 45000);
+</script>
+
+
+<script>
+
+let nextCheckTime = null;
+
+
+async function updateTrackerStatus() {
+
+    try {
+
+        const response =
+            await fetch("/status");
+
+        const data =
+            await response.json();
+
+
+        const status =
+            document.getElementById(
+                "trackerStatus"
+            );
+
+        const lastCheck =
+            document.getElementById(
+                "lastCheck"
+            );
+
+        const nextCheck =
+            document.getElementById(
+                "nextCheck"
+            );
+
+
+        if (data.active) {
+
+            status.innerHTML =
+                "● AKTİF";
+
+            status.className =
+                "tracker-online";
+
+        }
+        else {
+
+            status.innerHTML =
+                "● PASİF";
+
+            status.className =
+                "tracker-offline";
+
+        }
+
+
+        lastCheck.textContent =
+            data.last_success
+            || "Henüz sorgulanmadı";
+
+
+        if (data.next_check) {
+
+            nextCheckTime =
+                new Date(
+                    data.next_check
+                        .replace(" ", "T")
+                );
+
+        }
+
+    }
+
+    catch (error) {
+
+        console.error(
+            "Takip durumu alınamadı:",
+            error
+        );
+
+    }
+
+}
+
+
+function updateCountdown() {
+
+    const countdown =
+        document.getElementById(
+            "countdown"
+        );
+
+
+    if (!nextCheckTime) {
+
+        countdown.textContent =
+            "--";
+
+        return;
+
+    }
+
+
+    const now =
+        new Date();
+
+    const difference =
+        Math.max(
+            0,
+            Math.ceil(
+                (
+                    nextCheckTime - now
+                ) / 1000
+            )
+        );
+
+
+    countdown.textContent =
+        difference + " saniye";
+
+}
+
+
+updateTrackerStatus();
+
+updateCountdown();
+
+
+setInterval(
+    updateTrackerStatus,
+    1000
+);
+
+
+setInterval(
+    updateCountdown,
+    1000
+);
+
+</script>
+
+
+<script>
+(function () {
+    const root = document.documentElement;
+    const toggle = document.getElementById("themeToggle");
+    const icon = document.getElementById("themeIcon");
+    const label = document.getElementById("themeLabel");
+
+    function applyTheme(theme) {
+        root.setAttribute("data-theme", theme);
+
+        if (icon && label) {
+            icon.textContent = theme === "light" ? "☀" : "☾";
+            label.textContent = theme === "light" ? "Açık Tema" : "Koyu Tema";
+        }
+
+        try {
+            localStorage.setItem("apexTrackerTheme", theme);
+        } catch (error) {}
+
+        window.dispatchEvent(new CustomEvent("apex-theme-change", {
+            detail: { theme: theme }
+        }));
+    }
+
+    applyTheme(root.getAttribute("data-theme") || "dark");
+
+    if (toggle) {
+        toggle.addEventListener("click", function () {
+            const current = root.getAttribute("data-theme") || "dark";
+            applyTheme(current === "dark" ? "light" : "dark");
+        });
+    }
+})();
+</script>
+
+<script>
+(function () {
+    function syncAccordion(button, content, isOpen) {
+        button.setAttribute("aria-expanded", isOpen ? "true" : "false");
+        content.classList.toggle("is-open", isOpen);
+    }
+
+    document.querySelectorAll("[data-accordion-target]").forEach(function (button) {
+        const content = document.getElementById(button.getAttribute("data-accordion-target"));
+        if (!content) return;
+
+        const initialOpen = button.getAttribute("aria-expanded") === "true";
+        syncAccordion(button, content, initialOpen);
+
+        button.addEventListener("click", function () {
+            const isOpen = button.getAttribute("aria-expanded") === "true";
+            syncAccordion(button, content, !isOpen);
+        });
+    });
+})();
+</script>
+
+<script>
+(function () {
+    const table = document.getElementById("recentChecksTable");
+    if (!table) return;
+
+    const rows = Array.from(table.querySelectorAll("tbody tr"));
+
+    rows.forEach(function (row, index) {
+        const currentRP = Number(row.getAttribute("data-rp"));
+        const cell = row.querySelector(".check-change-cell");
+        if (!cell || Number.isNaN(currentRP)) return;
+
+        const nextRow = rows[index + 1];
+        const previousRP = nextRow ? Number(nextRow.getAttribute("data-rp")) : currentRP;
+        if (Number.isNaN(previousRP)) return;
+
+        const diff = currentRP - previousRP;
+        const badge = cell.querySelector(".check-change");
+        if (!badge) return;
+
+        if (diff > 0) {
+            badge.className = "check-change positive";
+            badge.innerHTML = '<span class="change-arrow">↗</span> +' + diff;
+        } else if (diff < 0) {
+            badge.className = "check-change negative";
+            badge.innerHTML = '<span class="change-arrow">↘</span> ' + diff;
+        } else {
+            badge.className = "check-change neutral";
+            badge.textContent = "-";
+        }
+    });
+})();
+</script>
+
+</body>
+
+</html>
