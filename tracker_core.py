@@ -26,7 +26,7 @@ load_env()
 # =========================================================
 
 API_KEY = os.getenv("APEX_API_KEY")
-UID = os.getenv("APEX_UID", "1010325481639")
+UID = os.getenv("APEX_UID")
 PLATFORM = os.getenv("APEX_PLATFORM", "PC")
 
 DB_NAME = os.getenv("APEX_DB_NAME", "apex_tracker.db")
