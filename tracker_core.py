@@ -25,7 +25,7 @@ load_env()
 # AYARLAR
 # =========================================================
 
-API_KEY = os.getenv("APEX_API_KEY", "fca5a99a6765357e766dc4f5e968b293")
+API_KEY = os.getenv("APEX_API_KEY")
 UID = os.getenv("APEX_UID", "1010325481639")
 PLATFORM = os.getenv("APEX_PLATFORM", "PC")
 
